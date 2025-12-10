@@ -16,18 +16,38 @@ def craft_http_request(host: str, path: str) -> str:
     return f"GET {path} HTTP/1.1\r\nHost: {host}\r\n\r\n"
 
 def create_socket(host: str, port: int, use_ssl: bool) -> socket.socket | ssl.SSLSocket:
-    # TODO: Create a TCP socket and wrap it in an SSL context if use_ssl is true
-    pass
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((host, port))
+
+    if use_ssl:
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        ssl_sock = context.wrap_socket(sock, server_hostname=host)
+        return ssl_sock
+    else:
+        return sock
 
 
 def get_peer_certificate(ssl_socket: ssl.SSLSocket) -> Dict[str, Any]:
-    # TODO: Get the peer certificate from the connected SSL socket.
-    pass
+    cert = ssl_socket.getpeercert()
+    if cert is None:
+        return {}
+    return cert
 
 def send_http_request(s: socket.socket | ssl.SSLSocket, request_string: str) -> str:
-    # TODO: Send an HTTPS request to the server using the SSL socket.
-    # TODO: receive response and return it as a string
-    pass
+    s.sendall(request_string.encode())
+
+    response = b""
+    while True:
+        chunk = s.recv(4096)
+        if not chunk:
+            break
+        response += chunk
+        if len(response) >= 1024:
+            break
+
+    return response.decode('utf-8', errors='ignore')
 
 
 def main(args):

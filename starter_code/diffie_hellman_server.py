@@ -6,26 +6,39 @@ from pathlib import Path
 from typing import Tuple
 
 
-# TODO feel free to use this helper or not
-def receive_common_info() -> Tuple[int, int]:
-    # TODO: Wait for a client message that sends a base number.
-    # TODO: Return the tuple (base, prime modulus)
-    pass
+def receive_common_info(conn: socket.socket) -> Tuple[int, int]:
+    data = conn.recv(1024).decode()
+    base, prime_modulus = map(int, data.split(','))
+    conn.sendall("ACK".encode())
+    return (base, prime_modulus)
 
 # Do NOT modify this function signature, it will be used by the autograder
 def dh_exchange_server(server_address: str, server_port: int) -> Tuple[int, int, int, int]:
-    # TODO: Create a server socket. can be UDP or TCP.
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((server_address, server_port))
+    server_socket.listen(1)
 
-    # TODO: Read client's proposal for base and modulus using receive_common_info
+    conn, addr = server_socket.accept()
+    base, prime_modulus = receive_common_info(conn)
 
-    # TODO: Generate your own secret key
+    secret = random.randint(1, 100)
+    server_public = pow(base, secret, prime_modulus)
 
-    # TODO: Exchange messages with the client
+    client_public = int(conn.recv(1024).decode())
+    conn.sendall(str(server_public).encode())
 
-    # TODO: Compute the shared secret.
+    shared_secret = pow(client_public, secret, prime_modulus)
 
-    # TODO: Return the base number, prime modulus, the secret integer, and the shared secret
-    pass
+    conn.close()
+    server_socket.close()
+
+    print(f"Base int is {base}")
+    print(f"Modulus is {prime_modulus}")
+    print(f"Secret is {secret}")
+    print(f"Int received from peer is {client_public}")
+    print(f"Shared secret is {shared_secret}")
+
+    return (base, prime_modulus, secret, shared_secret)
 
 def main(args):
     dh_exchange_server(args.address, args.port)

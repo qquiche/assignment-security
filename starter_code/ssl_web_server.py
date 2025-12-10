@@ -27,30 +27,42 @@ Content-Type: text/html
 
 
 def create_ssl_context(cert_file: str, key_file: Optional[str]) -> ssl.SSLContext:
-    # TODO: Create an SSL context for the server side. You will need to load your certificate.
-    pass
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    if key_file:
+        context.load_cert_chain(certfile=cert_file, keyfile=key_file)
+    else:
+        context.load_cert_chain(certfile=cert_file)
+    return context
 
 def setup_server(
     host_ip: str,
     host_port: int
 ) -> socket.socket:
-    # TODO: Create a TCP server socket and start listening for connections
-    pass
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind((host_ip, host_port))
+    server_socket.listen(5)
+    print(f"Server listening on {host_ip}:{host_port}")
+    return server_socket
 
 
 def setup_connection(
     listen_socket: socket.socket,
     ssl_context: Optional[ssl.SSLContext] = None
 ) -> socket.socket | ssl.SSLSocket:
-    # TODO accept a connection
-    # TODO if ssl_context is not None, wrap socket in SSL context
-    pass
+    conn, addr = listen_socket.accept()
+    print(f"Connection from {addr}")
+    if ssl_context:
+        conn = ssl_context.wrap_socket(conn, server_side=True)
+    return conn
 
 
 def handle_request(s: socket.socket | ssl.SSLSocket ) -> bytes:
-    # TODO read client request and responds with HTML_RESPONSE
-    # TODO close connection after responding
-    pass
+    request = s.recv(4096)
+    print(f"Received request:\n{request.decode('utf-8', errors='ignore')}")
+    s.sendall(HTML_RESPONSE)
+    s.close()
+    return HTML_RESPONSE
 
 def main(args):
     if args.ssl:

@@ -17,9 +17,11 @@ def craft_http_request(host: str, path: str) -> str:
 
 def create_socket(host: str, port: int, use_ssl: bool) -> socket.socket | ssl.SSLSocket:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    
+
     if use_ssl:
         context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
         ssl_sock = context.wrap_socket(sock, server_hostname=host)
         ssl_sock.connect((host, port))
         return ssl_sock
